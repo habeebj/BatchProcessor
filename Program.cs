@@ -47,7 +47,7 @@ var batchProcessor = new BulkProcessor<AccountModel, AccountResult>(async (accou
 var stopwatch = new Stopwatch();
 stopwatch.Start();
 
-var result = await batchProcessor.ProcessAsync(accountRequest);
+var result = await batchProcessor.ProcessAsync(accountRequest, CancellationToken.None);
 
 stopwatch.Stop();
 

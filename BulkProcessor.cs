@@ -22,9 +22,9 @@ public class BulkProcessor<TIn, TOut>
         _groupingFunction = groupingFunction ??= (_) => string.Empty;
     }
 
-    public Task<IEnumerable<TOut>> ProcessAsync(IEnumerable<TIn> input) => ProcessAsync(input.ToArray());
+    public Task<IEnumerable<TOut>> ProcessAsync(IEnumerable<TIn> input, CancellationToken cancellationToken = default) => ProcessAsync(input.ToArray(), cancellationToken);
 
-    public async Task<IEnumerable<TOut>> ProcessAsync(TIn[] input)
+    public async Task<IEnumerable<TOut>> ProcessAsync(TIn[] input, CancellationToken cancellationToken = default)
     {
         var transformBlock = new TransformBlock<IEnumerable<TIn>, IEnumerable<TOut>>(
             _transform, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = _maxDegreeOfParallelism });
@@ -42,11 +42,13 @@ public class BulkProcessor<TIn, TOut>
 
         List<TOut> result = [];
 
-        while (await transformBlock.OutputAvailableAsync())
+        while (await transformBlock.OutputAvailableAsync(cancellationToken))
         {
-            var transformBlockResult = await transformBlock.ReceiveAsync();
+            var transformBlockResult = await transformBlock.ReceiveAsync(cancellationToken);
             result.AddRange(transformBlockResult);
         }
+
+        _batchBlockStore.Clear();
 
         return result;
     }
